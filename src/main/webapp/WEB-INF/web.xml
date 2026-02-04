@@ -24,6 +24,9 @@
          metadata-complete="true"
          version="6.0">
     <listener>
+        <listener-class>org.dependencytrack.util.KeyManagerExtensionInitializer</listener-class>
+    </listener>
+    <listener>
         <listener-class>alpine.server.metrics.MetricsInitializer</listener-class>
     </listener>
     <listener>
