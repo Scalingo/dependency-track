@@ -511,15 +511,62 @@ prior to storing it in the database. The secret key used for encrypting and decr
 when Dependency-Track starts for the first time, and is placed in `<alpine.data.directory>/keys/secret.key`
 (`/data/.dependency-track/keys/secret.key` for containerized deployments).
 
-Starting with Dependency-Track 4.7, it is possible to change the location of the secret key via the `alpine.secret.key.path`
-property. This makes it possible to use Kubernetes secrets for example, to mount secrets into the custom location.
+##### Secret Key Configuration Methods
+
+Starting with Dependency-Track 4.7, there are multiple ways to configure the secret key:
+
+**Method 1: File path (alpine.secret.key.path)**
+
+This makes it possible to use Kubernetes secrets for example, to mount secrets into a custom location:
+
+```properties
+alpine.secret.key.path=/var/run/secrets/secret.key
+```
+
+**Method 2: Environment variable with key content (ALPINE_SECRET_KEY_CONTENT)**
+
+You can provide the secret key content directly via an environment variable. This is useful for Docker secrets or 
+cloud-native deployments where you want to pass secrets without mounting files:
+
+```shell
+# Generate and export the base64-encoded key
+export ALPINE_SECRET_KEY_CONTENT=$(openssl rand -base64 32)
+
+# Or from an existing key file
+export ALPINE_SECRET_KEY_CONTENT=$(base64 -w 0 /path/to/secret.key)
+```
+
+**Method 3: Environment variable pointing to content file (ALPINE_SECRET_KEY_CONTENT_FILE)**
+
+Similar to method 2, but the environment variable points to a file containing the base64-encoded key content:
+
+```shell
+# Create a file with the base64-encoded key
+openssl rand -base64 32 > /run/secrets/secret_key_content
+
+# Set the environment variable
+export ALPINE_SECRET_KEY_CONTENT_FILE=/run/secrets/secret_key_content
+```
+
+> **Priority order**: `ALPINE_SECRET_KEY_CONTENT_FILE` > `ALPINE_SECRET_KEY_CONTENT` > `alpine.secret.key.path` > default location
+
+> **Note**: When using environment variables, the key content should be base64-encoded. The application will decode it 
+> and write it to the configured location (or default location) for KeyManager to use.
+
+##### Generating Secret Keys
 
 Secret keys may be generated manually upfront instead of relying on Dependency-Track to do it. This can be achieved
 with OpenSSL like this:
 
 ```shell
+# Generate raw key (32 bytes for AES-256)
 openssl rand 32 > secret.key
+
+# Or generate base64-encoded key for environment variable
+openssl rand -base64 32
 ```
+
+##### Key Format Conversion
 
 > Note that the default key format has changed in version 4.7. While existing keys using the old format will continue
 > to work, keys for new instances will be generated in the new format. Old keys may be converted using the following
