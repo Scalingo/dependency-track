@@ -73,7 +73,7 @@ jobs:
 
       - name: Update Release
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |-
           cat << EOF >> .github/default-release-notes.md
           \`\`\`text
