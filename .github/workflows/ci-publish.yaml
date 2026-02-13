@@ -37,7 +37,7 @@ jobs:
     uses: ./.github/workflows/_meta-build.yaml
     with:
       app-version: ${{ needs.read-version.outputs.version }}
-      publish-container: true
+      publish-container: false
       ref-name: ${{ github.ref_name }}
     permissions:
       security-events: write # Required to upload trivy's SARIF output
