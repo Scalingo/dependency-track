@@ -37,7 +37,7 @@ jobs:
     uses: ./.github/workflows/_meta-build.yaml
     with:
       app-version: ${{ needs.read-version.outputs.version }}
-      publish-container: true
+      publish-container: false
       ref-name: ${{ github.ref_name }}
     permissions:
       security-events: write # Required to upload trivy's SARIF output
@@ -47,6 +47,8 @@ jobs:
 
   update-github-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs:
       - read-version
       - call-build
@@ -73,7 +75,7 @@ jobs:
 
       - name: Update Release
         env:
-          GITHUB_TOKEN: ${{ secrets.BOT_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |-
           cat << EOF >> .github/default-release-notes.md
           \`\`\`text
