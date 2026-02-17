@@ -119,7 +119,7 @@ class KeyManagerExtensionTest {
     void testSecretKeyPathResolution() {
         // Test that we can resolve the default secret key path
         final Config config = Config.getInstance();
-        final String dataDirectory = config.getDataDirectorty();
+        final String dataDirectory = config.getDataDirectorty().getAbsolutePath();
 
         // Construct expected path
         final File expectedPath = new File(dataDirectory + File.separator + "keys" + File.separator + "secret.key");
