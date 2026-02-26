@@ -31,8 +31,7 @@
     <groupId>org.dependencytrack</groupId>
     <artifactId>dependency-track</artifactId>
     <packaging>war</packaging>
-    <version>4.13.6-scalingo.x</version>
-
+    <version>4.13.6-scalingo.1</version>
     <name>Dependency-Track</name>
     <url>https://dependencytrack.org/</url>
     <description>Dependency-Track is an intelligent component analysis platform that allows organizations to identify and reduce risk in the software supply chain.</description>
