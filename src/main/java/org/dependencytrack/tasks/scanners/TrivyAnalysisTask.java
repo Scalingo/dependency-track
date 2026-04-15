@@ -302,6 +302,10 @@ public class TrivyAnalysisTask extends BaseComponentAnalyzerTask implements Subs
                 }
 
             } else if (component.getClassifier() == Classifier.OPERATING_SYSTEM) {
+                if (component.getName() == null || component.getVersion() == null) {
+                    LOGGER.debug("Skipping OS component with missing name or version: %s".formatted(component));
+                    continue;
+                }
                 LOGGER.debug("add operative system %s".formatted(component.toString()));
                 var key = "%s-%s".formatted(component.getName(), component.getVersion());
                 os.put(key, OS.newBuilder().setFamily(component.getName()).setName(component.getVersion()).build());
