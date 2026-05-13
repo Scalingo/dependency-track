@@ -1,0 +1,8 @@
+dependencies = []
+description = "Dependency-Track is an intelligent Component Analysis platform that allows organizations to identify and reduce risk in the software supply chain."
+destination_server = ["internal"]
+flags = ["tools"]
+languages = ["dockerfile", "shell"]
+owner = "yannick@scalingo.com"
+team = "Infosec"
+version = "1.0.0"
