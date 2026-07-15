@@ -44,7 +44,13 @@ git remote add upstream ssh://git@github.com:22/DependencyTrack/dependency-track
 
 ## 2. Partir d'une nouvelle branche upstream
 
-### Depuis une branche upstream (ex: `5.0.x`)
+> **Convention de nommage** : `{majeure.mineure}.x-scalingo`
+> ex: `5.0.x-scalingo`, `5.0.2.x-scalingo`, `5.1.x-scalingo`
+
+### Cas A — Branche SNAPSHOT (ex: `5.0.x`)
+
+C'est le cas le plus simple : le pom.xml est à `5.0.3-SNAPSHOT`, toutes les
+versions sont cohérentes d'emblée.
 
 ```bash
 git fetch upstream
@@ -52,22 +58,77 @@ git checkout -b 5.0.x-scalingo upstream/5.0.x
 git push -u origin 5.0.x-scalingo
 ```
 
-### Depuis un tag upstream (ex: `v5.0.2`)
+Ajoutez le workflow de release :
 
 ```bash
-git fetch upstream --tags
-git checkout -b 5.0.x-scalingo v5.0.2
-git push -u origin 5.0.x-scalingo
+git checkout master -- .github/workflows/ci-release-scalingo.yaml
+git add .github/workflows/ci-release-scalingo.yaml
+git commit -m "ci: add Scalingo release workflow"
+git push origin 5.0.x-scalingo
 ```
 
-> **Convention de nommage** : `{version-upstream-majeure.mineure}.x-scalingo`
-> ex: `5.0.x-scalingo`, `5.1.x-scalingo`
+### Cas B — Branche de release figée (ex: `5.0.2.x`)
+
+Ces branches ont souvent une **incohérence de version** entre le root pom
+(`5.0.2.1`) et les sous-modules qui référencent le parent à `5.0.2`. Maven
+refuse de parser le projet dans cet état.
+
+**Étape 1** : créer la branche scalingo
+
+```bash
+git fetch origin
+git checkout -b 5.0.2.x-scalingo origin/5.0.2.x
+```
+
+**Étape 2** : vérifier la cohérence des versions
+
+```bash
+# Version du root pom
+git show HEAD:pom.xml | grep '<version>' | head -1
+# Ex: <version>5.0.2.1</version>
+
+# Version du parent référencée dans un sous-module
+git show HEAD:apiserver/pom.xml | grep -A3 '<parent>' | grep '<version>'
+# Ex: <version>5.0.2</version>   ← différent → incohérence !
+```
+
+**Étape 3** : si incohérence, aligner le root pom sur la version des sous-modules
+
+```bash
+# Éditer pom.xml : changer 5.0.2.1 → 5.0.2 dans la balise <version> du projet
+# (pas dans les dépendances, uniquement le <version> du projet racine)
+sed -i 's|<version>5\.0\.2\.1</version>|<version>5.0.2</version>|' pom.xml
+
+git add pom.xml
+git commit -m "fix: align root pom version with sub-modules (5.0.2)"
+```
+
+**Étape 4** : ajouter le workflow et pousser
+
+```bash
+git checkout master -- .github/workflows/ci-release-scalingo.yaml
+git add .github/workflows/ci-release-scalingo.yaml
+git commit -m "ci: add Scalingo release workflow"
+git push -u origin 5.0.2.x-scalingo
+```
+
+**Étape 5** : déclencher la release en forçant la version de base
+
+```bash
+# version-overwrite obligatoire ici (pas de SNAPSHOT à parser)
+gh api --method POST \
+  repos/Scalingo/dependency-track/actions/workflows/ci-release-scalingo.yaml/dispatches \
+  -f ref=5.0.2.x-scalingo \
+  -f inputs='{"scalingo-patch":"1","version-overwrite":"5.0.2"}'
+```
 
 ---
 
 ## 3. Ajouter du code Scalingo
 
-Travaillez sur des branches de feature dédiées pour faciliter les rebases futurs :
+### Workflow de développement
+
+Travaillez toujours sur une branche de feature dédiée pour faciliter les rebases futurs :
 
 ```bash
 git checkout 5.0.x-scalingo
@@ -79,9 +140,29 @@ git push origin feat/my-scalingo-feature
 # Créer une PR vers 5.0.x-scalingo (pas vers master ni upstream)
 ```
 
-Exemples de features déjà intégrées :
+### Où placer votre code
+
+| Besoin | Module | Exemple de chemin |
+|---|---|---|
+| Nouvelle policy d'analyse | `apiserver` | `apiserver/src/main/java/org/dependencytrack/policy/` |
+| Nouvelle source de vulnérabilités | `apiserver` | `apiserver/src/main/java/org/dependencytrack/tasks/scanners/` |
+| Nouveau endpoint REST v1 | `apiserver` | `apiserver/src/main/java/org/dependencytrack/resources/v1/` |
+| Nouveau endpoint REST v2 | `api` | `api/src/main/openapi/` (spec-first) |
+| Nouvelle notification | `notification` | `notification/src/main/java/org/dependencytrack/notification/` |
+| Configuration (variables d'env) | `apiserver` | `apiserver/src/main/resources/application.properties` |
+| Migration de schéma BDD | `migration` | `migration/src/main/resources/org/dependencytrack/migration/` |
+
+### Conventions à respecter
+
+- **Persistance** : utilisez JDBI + SQL brut pour tout nouveau code (pas JDO/DataNucleus)
+- **Nouveaux endpoints** : ajoutez `@PermissionRequired` pour tout endpoint REST
+- **Tests** : ajoutez un test par méthode publique ou endpoint ajouté
+- **Nommage** : préfixez vos classes custom avec `Scalingo` ou placez-les dans un sous-package `scalingo` pour les retrouver facilement lors des rebases
+
+### Exemples de features déjà intégrées
+
 - `feat/secret-key-env-var` — chargement de la clé secrète depuis les variables d'env
-- Support de la policy "Internal Status"
+- Support de la policy "Internal Status" (`InternalStatusPolicyEvaluator`)
 
 ---
 
@@ -129,22 +210,32 @@ Le workflow GitHub Actions **Release CI (Scalingo)** gère tout automatiquement.
 ### Via GitHub CLI
 
 ```bash
+# Branche SNAPSHOT (version-overwrite optionnel)
 gh api --method POST \
   repos/Scalingo/dependency-track/actions/workflows/ci-release-scalingo.yaml/dispatches \
   -f ref=5.0.x-scalingo \
   -f inputs='{"scalingo-patch":"1"}'
+
+# Branche de release figée (version-overwrite OBLIGATOIRE)
+gh api --method POST \
+  repos/Scalingo/dependency-track/actions/workflows/ci-release-scalingo.yaml/dispatches \
+  -f ref=5.0.2.x-scalingo \
+  -f inputs='{"scalingo-patch":"1","version-overwrite":"5.0.2"}'
 ```
 
 ### Ce que fait le workflow
 
 ```
-prepare-release  →  calcule "5.0.3-scalingo.1" depuis pom.xml
-create-release   →  bumpe tous les pom.xml, commit, crée le GitHub Release + tag
-post-release     →  restaure "5.0.3-SNAPSHOT" sur la branche
+prepare-release  →  calcule "5.0.3-scalingo.1" depuis pom.xml (ou version-overwrite)
+create-release   →  bumpe tous les pom.xml (git add -u), commit, crée le GitHub Release + tag
+post-release     →  restaure la version SNAPSHOT sur la branche
 ```
 
 > Le tag créé (`5.0.3-scalingo.1`) déclenche automatiquement **Publish CI**
 > qui build les JARs et les attache à la release.
+
+> **Branche SNAPSHOT** : `post-release` restaure `5.0.3-SNAPSHOT`  
+> **Branche figée** : `post-release` restaure `5.0.2-SNAPSHOT` (la branche évolue vers SNAPSHOT)
 
 ### Incrémenter le patch Scalingo
 
@@ -197,20 +288,44 @@ buildées localement mais non pushées. Pour activer la publication :
 ## Résumé des commandes courantes
 
 ```bash
-# Nouvelle branche scalingo depuis upstream
+# --- Nouvelle branche depuis une branche SNAPSHOT upstream ---
 git fetch upstream && git checkout -b 5.1.x-scalingo upstream/5.1.x
+git checkout master -- .github/workflows/ci-release-scalingo.yaml
+git add .github/workflows/ci-release-scalingo.yaml && git commit -m "ci: add Scalingo release workflow"
+git push -u origin 5.1.x-scalingo
 
-# Ajouter une feature
+# --- Nouvelle branche depuis une branche de release figée ---
+git fetch origin && git checkout -b 5.0.2.x-scalingo origin/5.0.2.x
+# Vérifier cohérence root pom vs sous-modules, puis si besoin :
+# sed -i 's|<version>5\.0\.2\.1</version>|<version>5.0.2</version>|' pom.xml
+git checkout master -- .github/workflows/ci-release-scalingo.yaml
+git add . && git commit -m "ci: add Scalingo release workflow"
+git push -u origin 5.0.2.x-scalingo
+
+# --- Ajouter une feature ---
 git checkout -b feat/my-feature 5.0.x-scalingo
+# ... commits ...
+git push origin feat/my-feature
+# PR vers 5.0.x-scalingo
 
-# Synchro upstream
+# --- Synchro upstream ---
 git fetch upstream && git rebase upstream/5.0.x && git push --force-with-lease
 
-# Release (patch 1)
+# --- Release depuis branche SNAPSHOT ---
 gh api --method POST \
   repos/Scalingo/dependency-track/actions/workflows/ci-release-scalingo.yaml/dispatches \
   -f ref=5.0.x-scalingo -f inputs='{"scalingo-patch":"1"}'
 
-# Vérifier les runs
+# --- Release depuis branche figée (version-overwrite obligatoire) ---
+gh api --method POST \
+  repos/Scalingo/dependency-track/actions/workflows/ci-release-scalingo.yaml/dispatches \
+  -f ref=5.0.2.x-scalingo -f inputs='{"scalingo-patch":"1","version-overwrite":"5.0.2"}'
+
+# --- Publish CI manuel (si non déclenché automatiquement) ---
+gh api --method POST \
+  repos/Scalingo/dependency-track/actions/workflows/ci-publish.yaml/dispatches \
+  -d '{"ref":"5.0.3-scalingo.1"}'
+
+# --- Vérifier les runs ---
 gh run list --repo Scalingo/dependency-track --branch 5.0.x-scalingo
 ```
