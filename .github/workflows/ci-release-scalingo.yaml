@@ -1,0 +1,113 @@
+name: Release CI (Scalingo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      scalingo-patch:
+        required: false
+        default: '1'
+        description: 'Scalingo patch number (e.g. 1 produces -scalingo.1 suffix)'
+        type: string
+      version-overwrite:
+        required: false
+        default: ''
+        description: 'Override the base version (format x.y.z). Defaults to the SNAPSHOT version in pom.xml.'
+        type: string
+
+permissions: {}
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.variables.outputs.version }}
+      next-snapshot: ${{ steps.variables.outputs.next-snapshot }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v6.0.2
+
+      - name: Setup Environment
+        id: variables
+        run: |-
+          BASE_VERSION="${{ github.event.inputs.version-overwrite }}"
+          if [[ -z "${BASE_VERSION}" ]]; then
+            CURRENT_SNAPSHOT=$(yq -p=xml '.project.version' pom.xml)
+            BASE_VERSION="${CURRENT_SNAPSHOT%-SNAPSHOT}"
+          fi
+          PATCH="${{ github.event.inputs.scalingo-patch }}"
+          VERSION="${BASE_VERSION}-scalingo.${PATCH}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "next-snapshot=${BASE_VERSION}-SNAPSHOT" >> $GITHUB_OUTPUT
+
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - prepare-release
+    env:
+      VERSION: ${{ needs.prepare-release.outputs.version }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # tag=v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Set Version
+        run: mvn -B --no-transfer-progress versions:set -DnewVersion=${VERSION}
+
+      - name: Commit Version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git add -u
+          git commit -m "prepare-release: set version to ${VERSION}"
+          git push origin ${GITHUB_REF_NAME}
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          gh release create "${VERSION}" \
+            --target "${GITHUB_REF_NAME}" \
+            --title "${VERSION}" \
+            --generate-notes
+
+  post-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - prepare-release
+      - create-release
+    env:
+      NEXT_SNAPSHOT: ${{ needs.prepare-release.outputs.next-snapshot }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v6.0.2
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Restore SNAPSHOT Version
+        run: mvn -B --no-transfer-progress versions:set -DnewVersion=${NEXT_SNAPSHOT}
+
+      - name: Commit SNAPSHOT Version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git add -u
+          git commit -m "prepare-iteration: restore version to ${NEXT_SNAPSHOT}"
+          git push origin ${GITHUB_REF_NAME}
