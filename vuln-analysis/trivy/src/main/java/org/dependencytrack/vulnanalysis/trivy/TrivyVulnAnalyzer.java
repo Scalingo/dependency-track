@@ -103,6 +103,10 @@ final class TrivyVulnAnalyzer implements VulnAnalyzer {
             if (component.hasPurl() && component.hasBomRef()) {
                 processComponentWithPurl(component, apps, pkgs, bomRefsByPurl);
             } else if (component.getType() == Classification.CLASSIFICATION_OPERATING_SYSTEM) {
+                if (component.getName().isBlank() || component.getVersion().isBlank()) {
+                    LOGGER.debug("Skipping OS component with missing name or version: {}", component);
+                    continue;
+                }
                 final String key = "%s-%s".formatted(component.getName(), component.getVersion());
                 osMap.put(key, OS.newBuilder()
                         .setFamily(component.getName())
