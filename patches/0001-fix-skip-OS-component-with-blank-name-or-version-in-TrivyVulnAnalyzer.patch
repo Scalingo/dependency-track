@@ -1,0 +1,30 @@
+From a93e2d1417dca0f9ca1f5ad4d8348ec0657d5d01 Mon Sep 17 00:00:00 2001
+From: Thomas HENON <thomas.henon@scalingo.com>
+Date: Fri, 17 Jul 2026 14:20:33 +0200
+Subject: [PATCH] fix: skip OS component with blank name or version in
+ TrivyVulnAnalyzer
+
+Adapted from patch 0001-fix-NullPointerException-NPE-when-OS-component-has-n.patch.
+The v5 code uses protobuf Component (strings are never null, use isBlank() instead).
+---
+ .../dependencytrack/vulnanalysis/trivy/TrivyVulnAnalyzer.java | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/vuln-analysis/trivy/src/main/java/org/dependencytrack/vulnanalysis/trivy/TrivyVulnAnalyzer.java b/vuln-analysis/trivy/src/main/java/org/dependencytrack/vulnanalysis/trivy/TrivyVulnAnalyzer.java
+index ec6ee1471..fb0a7f7ab 100644
+--- a/vuln-analysis/trivy/src/main/java/org/dependencytrack/vulnanalysis/trivy/TrivyVulnAnalyzer.java
++++ b/vuln-analysis/trivy/src/main/java/org/dependencytrack/vulnanalysis/trivy/TrivyVulnAnalyzer.java
+@@ -103,6 +103,10 @@ final class TrivyVulnAnalyzer implements VulnAnalyzer {
+             if (component.hasPurl() && component.hasBomRef()) {
+                 processComponentWithPurl(component, apps, pkgs, bomRefsByPurl);
+             } else if (component.getType() == Classification.CLASSIFICATION_OPERATING_SYSTEM) {
++                if (component.getName().isBlank() || component.getVersion().isBlank()) {
++                    LOGGER.debug("Skipping OS component with missing name or version: {}", component);
++                    continue;
++                }
+                 final String key = "%s-%s".formatted(component.getName(), component.getVersion());
+                 osMap.put(key, OS.newBuilder()
+                         .setFamily(component.getName())
+-- 
+2.43.0
+
