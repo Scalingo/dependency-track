@@ -19,12 +19,28 @@
         </encoder>
     </appender>
 
+    <!--
+        Reports log events at or above ROLLBAR_LEVEL to Rollbar (https://rollbar.com).
+        Disabled by default; enable by setting the ROLLBAR_ENABLED and ROLLBAR_TOKEN
+        environment variables.
+    -->
+    <appender name="ROLLBAR" class="com.rollbar.logback.RollbarAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${ROLLBAR_LEVEL:-ERROR}</level>
+        </filter>
+        <enabled>${ROLLBAR_ENABLED:-false}</enabled>
+        <accessToken>${ROLLBAR_TOKEN:-}</accessToken>
+        <environment>${ROLLBAR_ENVIRONMENT:-production}</environment>
+    </appender>
+
     <logger name="alpine" level="INFO" additivity="false">
         <appender-ref ref="JSON_STDOUT" />
+        <appender-ref ref="ROLLBAR" />
     </logger>
 
     <logger name="org.dependencytrack" level="INFO" additivity="false">
         <appender-ref ref="JSON_STDOUT" />
+        <appender-ref ref="ROLLBAR" />
     </logger>
 
     <logger name="org.eclipse.jetty" level="INFO" additivity="false">
@@ -33,5 +49,6 @@
 
     <root level="WARN">
         <appender-ref ref="JSON_STDOUT" />
+        <appender-ref ref="ROLLBAR" />
     </root>
 </configuration>

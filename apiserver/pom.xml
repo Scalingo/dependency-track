@@ -445,6 +445,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
+        <!-- Rollbar error reporting -->
+        <dependency>
+            <groupId>com.rollbar</groupId>
+            <artifactId>rollbar-logback</artifactId>
+        </dependency>
         <!-- YAML -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
