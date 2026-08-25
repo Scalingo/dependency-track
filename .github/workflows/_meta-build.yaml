@@ -31,9 +31,9 @@ on:
         required: true
         description: "Short ref name of the branch or tag that triggered the workflow run"
     secrets:
-      registry-0-usr:
+      dockerhub-usr:
         required: true
-      registry-0-psw:
+      dockerhub-psw:
         required: true
 
 permissions: { }
@@ -114,8 +114,6 @@ jobs:
     name: Build Container (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      packages: write # Required to push images to ghcr.io
     needs:
       - build-java
     strategy:
@@ -126,10 +124,12 @@ jobs:
             context: apiserver
             artifact: assembled-dist
             prepare-cmd: tar xzf apiserver/target/dependency-track-apiserver-dist.tar.gz -C apiserver/target
+            dockerhub-repo: dependency-track
           - name: v4-migrator
             context: support/v4-migrator
             artifact: v4-migrator-jar
             prepare-cmd: ":" # no-op
+            dockerhub-repo: dependency-track-migrator
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v6.0.2
@@ -154,20 +154,19 @@ jobs:
         with:
           install: true
 
-      - name: Login to GitHub Container Registry
+      - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # tag=v4.2.0
         if: ${{ inputs.publish-container }}
         with:
-          registry: ghcr.io
-          username: ${{ secrets.registry-0-usr }}
-          password: ${{ secrets.registry-0-psw }}
+          username: ${{ secrets.dockerhub-usr }}
+          password: ${{ secrets.dockerhub-psw }}
 
       - name: Set Container Tags
         id: tags
         env:
           REF_NAME: ${{ inputs.ref-name }}
           APP_VERSION: ${{ inputs.app-version }}
-          IMAGE: ${{ matrix.name }}
+          IMAGE: docker.io/scalingo/${{ matrix.dockerhub-repo }}
         run: |-
           shopt -s nocasematch
           if [[ ! "$APP_VERSION" =~ ^([0-9]+-snapshot|[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?(\+[A-Za-z0-9.]+)?)$ ]]; then
@@ -179,19 +178,20 @@ jobs:
             exit 1
           fi
 
-          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE}"
-          TAGS=""
-
           if [[ "$REF_NAME" == feature-* ]]; then
             # OCI tags disallow '/', but git refs allow it (e.g. feature-foo/bar).
             # Lowercase and substitute '/' for '-' to produce a valid tag.
             REF_TAG="${REF_NAME,,}"
             REF_TAG="${REF_TAG//\//-}"
-            TAGS="${IMAGE_NAME}:${REF_TAG}"
+            TAGS="${IMAGE}:${REF_TAG}"
           else
-            TAGS="${IMAGE_NAME}:${APP_VERSION}"
+            TAGS="${IMAGE}:${APP_VERSION}"$'\n'"${IMAGE}:latest"
           fi
-          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          {
+            echo "tags<<EOF"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build multi-arch Container Image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # tag=v7.2.0

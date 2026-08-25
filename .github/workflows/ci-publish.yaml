@@ -64,11 +64,9 @@ jobs:
       app-version: ${{ needs.read-version.outputs.version }}
       publish-container: true
       ref-name: ${{ github.ref_name }}
-    permissions:
-      packages: write # Required to push images to ghcr.io
     secrets:
-      registry-0-usr: ${{ github.repository_owner }}
-      registry-0-psw: ${{ github.repository_owner == 'DependencyTrack' && secrets.BOT_IMAGE_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+      dockerhub-usr: ${{ secrets.DOCKER_HUB_USERNAME }}
+      dockerhub-psw: ${{ secrets.DOCKER_HUB_TOKEN }}
 
   update-github-release:
     runs-on: ubuntu-latest
