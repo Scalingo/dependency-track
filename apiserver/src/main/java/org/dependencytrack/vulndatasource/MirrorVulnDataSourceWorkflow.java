@@ -21,6 +21,7 @@ package org.dependencytrack.vulndatasource;
 import org.dependencytrack.dex.api.Workflow;
 import org.dependencytrack.dex.api.WorkflowContext;
 import org.dependencytrack.dex.api.WorkflowSpec;
+import org.dependencytrack.dex.api.failure.ActivityFailureException;
 import org.dependencytrack.dex.api.failure.TerminalApplicationFailureException;
 import org.dependencytrack.metrics.RefreshVulnerabilityMetricsActivity;
 import org.dependencytrack.proto.internal.workflow.v1.MirrorVulnDataSourceArg;
@@ -40,7 +41,22 @@ public final class MirrorVulnDataSourceWorkflow implements Workflow<MirrorVulnDa
             throw new TerminalApplicationFailureException("No argument or data source name provided");
         }
 
-        ctx.activity(MirrorVulnDataSourceActivity.class).call(arg).await();
+        try {
+            ctx.activity(MirrorVulnDataSourceActivity.class).call(arg).await();
+        } catch (ActivityFailureException e) {
+            final String cause = e.getCause() != null && e.getCause().getMessage() != null
+                    ? e.getCause().getMessage()
+                    : "Unknown error";
+            // Logged at ERROR (rather than the engine's own WARN retry logs) so this is
+            // reported by error trackers (e.g. Rollbar) even at their default ERROR threshold.
+            ctx.logger().error("Mirroring of vulnerability data source '{}' failed", arg.getDataSourceName(), e.getCause());
+            ctx.activity(EmitVulnDataSourceMirroringFailedNotificationActivity.class)
+                    .call("Mirroring of vulnerability data source '%s' failed: %s"
+                            .formatted(arg.getDataSourceName(), cause))
+                    .await();
+            throw e;
+        }
+
         ctx.activity(RefreshVulnerabilityMetricsActivity.class).call().await();
         return null;
     }

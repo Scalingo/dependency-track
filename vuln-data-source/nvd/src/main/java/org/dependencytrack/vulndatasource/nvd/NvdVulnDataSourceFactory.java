@@ -189,12 +189,12 @@ final class NvdVulnDataSourceFactory implements VulnDataSourceFactory, RuntimeCo
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            LOGGER.warn("Failed to connect to {}", metadataUri, e);
+            LOGGER.error("Failed to connect to {}", metadataUri, e);
             return testResult.fail("connection", "Connection failed, check logs for details");
         }
 
         if (response.statusCode() != 200) {
-            LOGGER.warn("Unexpected response code {} from {}", response.statusCode(), metadataUri);
+            LOGGER.error("Unexpected response code {} from {}", response.statusCode(), metadataUri);
             return testResult.fail("connection", "Unexpected response code, check logs for details");
         }
 
@@ -204,7 +204,7 @@ final class NvdVulnDataSourceFactory implements VulnDataSourceFactory, RuntimeCo
             var _ = NvdDataFeedMetadata.of(response.body());
             testResult.pass("feed_format");
         } catch (RuntimeException e) {
-            LOGGER.warn("Failed to parse feed metadata from {}", metadataUri, e);
+            LOGGER.error("Failed to parse feed metadata from {}", metadataUri, e);
             testResult.fail("feed_format", "Failed to parse feed metadata, check logs for details");
         }
 

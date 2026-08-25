@@ -59,6 +59,7 @@ import static org.dependencytrack.notification.proto.v1.Group.GROUP_BOM_CONSUMED
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_BOM_PROCESSED;
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_BOM_PROCESSING_FAILED;
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_BOM_VALIDATION_FAILED;
+import static org.dependencytrack.notification.proto.v1.Group.GROUP_DATASOURCE_MIRRORING;
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_INTEGRATION;
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_NEW_POLICY_VIOLATIONS_SUMMARY;
 import static org.dependencytrack.notification.proto.v1.Group.GROUP_NEW_VULNERABILITIES_SUMMARY;
@@ -273,6 +274,15 @@ public final class NotificationFactory {
 
         return newNotificationBuilder(SCOPE_SYSTEM, GROUP_INTEGRATION, LEVEL_ERROR)
                 .setTitle("Integration Error")
+                .setContent(content)
+                .build();
+    }
+
+    public static Notification createDataSourceMirroringErrorNotification(final String content) {
+        requireNonNull(content, "content must not be null");
+
+        return newNotificationBuilder(SCOPE_SYSTEM, GROUP_DATASOURCE_MIRRORING, LEVEL_ERROR)
+                .setTitle("Vulnerability Data Source Mirroring Error")
                 .setContent(content)
                 .build();
     }
