@@ -28,6 +28,7 @@ public enum Permissions {
 
     BOM_UPLOAD("Allows the ability to upload CycloneDX Software Bill of Materials (SBOM)"),
     VIEW_PORTFOLIO("Provides the ability to view the portfolio of projects, components, and licenses"),
+    VIEW_PORTFOLIO_METADATA("Provides the ability to view project existence and metadata (name, version, tags) without portfolio content such as components or SBOMs"),
     PORTFOLIO_ACCESS_CONTROL_BYPASS("Provides the ability to bypass portfolio access control, granting access to all projects"),
     PORTFOLIO_MANAGEMENT("Allows the creation, modification, and deletion of data in the portfolio"),
     PORTFOLIO_MANAGEMENT_CREATE("Allows the creation of data in the portfolio"),
@@ -82,6 +83,7 @@ public enum Permissions {
     public static class Constants {
         public static final String BOM_UPLOAD = "BOM_UPLOAD";
         public static final String VIEW_PORTFOLIO = "VIEW_PORTFOLIO";
+        public static final String VIEW_PORTFOLIO_METADATA = "VIEW_PORTFOLIO_METADATA";
         public static final String PORTFOLIO_ACCESS_CONTROL_BYPASS = Permissions.PORTFOLIO_ACCESS_CONTROL_BYPASS.name();
         public static final String PORTFOLIO_MANAGEMENT = "PORTFOLIO_MANAGEMENT";
         public static final String PORTFOLIO_MANAGEMENT_CREATE = "PORTFOLIO_MANAGEMENT_CREATE";

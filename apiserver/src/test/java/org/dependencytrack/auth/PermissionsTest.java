@@ -53,6 +53,7 @@ import static org.dependencytrack.auth.Permissions.Constants.TAG_MANAGEMENT;
 import static org.dependencytrack.auth.Permissions.Constants.TAG_MANAGEMENT_DELETE;
 import static org.dependencytrack.auth.Permissions.Constants.VIEW_POLICY_VIOLATION;
 import static org.dependencytrack.auth.Permissions.Constants.VIEW_PORTFOLIO;
+import static org.dependencytrack.auth.Permissions.Constants.VIEW_PORTFOLIO_METADATA;
 import static org.dependencytrack.auth.Permissions.Constants.VIEW_VULNERABILITY;
 import static org.dependencytrack.auth.Permissions.Constants.VULNERABILITY_ANALYSIS;
 import static org.dependencytrack.auth.Permissions.Constants.VULNERABILITY_ANALYSIS_CREATE;
@@ -68,9 +69,10 @@ public class PermissionsTest {
 
     @Test
     public void testPermissionEnums() {
-        Assertions.assertEquals(42, Permissions.values().length);
+        Assertions.assertEquals(43, Permissions.values().length);
         Assertions.assertEquals("BOM_UPLOAD", Permissions.BOM_UPLOAD.name());
         Assertions.assertEquals("VIEW_PORTFOLIO", Permissions.VIEW_PORTFOLIO.name());
+        Assertions.assertEquals("VIEW_PORTFOLIO_METADATA", Permissions.VIEW_PORTFOLIO_METADATA.name());
         Assertions.assertEquals("PORTFOLIO_ACCESS_CONTROL_BYPASS", Permissions.PORTFOLIO_ACCESS_CONTROL_BYPASS.name());
         Assertions.assertEquals("PORTFOLIO_MANAGEMENT", Permissions.PORTFOLIO_MANAGEMENT.name());
         Assertions.assertEquals("PORTFOLIO_MANAGEMENT_CREATE", Permissions.PORTFOLIO_MANAGEMENT_CREATE.name());
@@ -117,6 +119,7 @@ public class PermissionsTest {
     public void testPermissionConstants() {
         Assertions.assertEquals("BOM_UPLOAD", BOM_UPLOAD);
         Assertions.assertEquals("VIEW_PORTFOLIO", VIEW_PORTFOLIO);
+        Assertions.assertEquals("VIEW_PORTFOLIO_METADATA", VIEW_PORTFOLIO_METADATA);
         Assertions.assertEquals("PORTFOLIO_ACCESS_CONTROL_BYPASS", PORTFOLIO_ACCESS_CONTROL_BYPASS);
         Assertions.assertEquals("PORTFOLIO_MANAGEMENT", PORTFOLIO_MANAGEMENT);
         Assertions.assertEquals("PORTFOLIO_MANAGEMENT_CREATE", PORTFOLIO_MANAGEMENT_CREATE);

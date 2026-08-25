@@ -43,6 +43,7 @@ public final class PermissionCatalog {
         INSERT INTO "PERMISSION" ("NAME", "DESCRIPTION") VALUES
             ('BOM_UPLOAD', 'Allows the ability to upload CycloneDX Software Bill of Materials (SBOM)'),
             ('VIEW_PORTFOLIO', 'Provides the ability to view the portfolio of projects, components, and licenses'),
+            ('VIEW_PORTFOLIO_METADATA', 'Provides the ability to view project existence and metadata (name, version, tags) without portfolio content such as components or SBOMs'),
             ('PORTFOLIO_ACCESS_CONTROL_BYPASS', 'Provides the ability to bypass portfolio access control, granting access to all projects'),
             ('PORTFOLIO_MANAGEMENT', 'Allows the creation, modification, and deletion of data in the portfolio'),
             ('PORTFOLIO_MANAGEMENT_CREATE', 'Allows the creation of data in the portfolio'),
