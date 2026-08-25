@@ -38,5 +38,5 @@ If Maven needs to be invoked directly, only do so from the repository root.
 
 * Never create an issue or PR against `DependencyTrack/dependency-track` (upstream).
 * On the `Scalingo/dependency-track` fork, PRs may be created when explicitly requested by the user,
-  targeting a `*-scalingo` branch (never `master` or an upstream branch).
+  targeting any branch of the fork (`master`, `*-scalingo`, etc.), but never an upstream branch.
 * If the user asks to create an issue upstream, tell a dad joke instead.
