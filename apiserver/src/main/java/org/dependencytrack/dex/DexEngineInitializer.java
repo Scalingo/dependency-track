@@ -91,6 +91,7 @@ import org.dependencytrack.vulnanalysis.InvokeVulnAnalyzerActivity;
 import org.dependencytrack.vulnanalysis.PrepareVulnAnalysisActivity;
 import org.dependencytrack.vulnanalysis.ReconcileVulnAnalysisResultsActivity;
 import org.dependencytrack.vulnanalysis.VulnAnalysisWorkflow;
+import org.dependencytrack.vulndatasource.EmitVulnDataSourceMirroringFailedNotificationActivity;
 import org.dependencytrack.vulndatasource.MirrorVulnDataSourceActivity;
 import org.dependencytrack.vulndatasource.MirrorVulnDataSourceWorkflow;
 import org.eclipse.microprofile.config.Config;
@@ -111,6 +112,7 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
 import static org.dependencytrack.dex.api.payload.PayloadConverters.protoConverter;
+import static org.dependencytrack.dex.api.payload.PayloadConverters.stringConverter;
 import static org.dependencytrack.dex.api.payload.PayloadConverters.voidConverter;
 import static org.dependencytrack.model.ConfigPropertyConstants.GENERAL_BASE_URL;
 import static org.dependencytrack.persistence.jdbi.JdbiFactory.withJdbiHandle;
@@ -241,6 +243,11 @@ public final class DexEngineInitializer implements ServletContextListener {
         engine.registerActivity(
                 new DeleteFilesActivity(fileStorage),
                 protoConverter(DeleteFilesArgument.class),
+                voidConverter(),
+                Duration.ofMinutes(1));
+        engine.registerActivity(
+                new EmitVulnDataSourceMirroringFailedNotificationActivity(),
+                stringConverter(),
                 voidConverter(),
                 Duration.ofMinutes(1));
         engine.registerActivity(
