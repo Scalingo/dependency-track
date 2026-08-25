@@ -265,23 +265,23 @@ gh api --method POST \
 
 ## 7. Publier les images Docker sur Docker Hub
 
-`ci-publish.yaml` build et pousse déjà les images `apiserver` et `v4-migrator`
-vers `ghcr.io/scalingo/*` à chaque tag de release (`publish-container: true`).
+`ci-publish.yaml` build et pousse directement les images vers Docker Hub à
+chaque tag de release (`publish-container: true` dans `_meta-build.yaml`) :
+- `apiserver` → `docker.io/scalingo/dependency-track:<version>` (+ `:latest`)
+- `v4-migrator` → `docker.io/scalingo/dependency-track-migrator:<version>` (+ `:latest`)
 
-L'image `apiserver` est en plus miroitée vers Docker Hub
-(`docker.io/scalingo/dependency-track`, tags `<version>` et `latest`) par le
-workflow dédié
-[`.github/workflows/mirror-container-image-scalingo.yml`](.github/workflows/mirror-container-image-scalingo.yml),
-déclenché sur l'événement `registry_package: published` une fois l'image
-poussée sur ghcr.io.
+> **Pourquoi pas ghcr.io + mirroring ?** Une première version poussait vers
+> `ghcr.io` puis miroitait vers Docker Hub via un workflow déclenché par
+> l'événement `registry_package`. Ça ne fonctionne pas sur ce fork : GitHub
+> n'émet pas de nouveau run de workflow pour un événement causé par le
+> `GITHUB_TOKEN` par défaut (protection anti-récursion), et `registry_package`
+> n'est pas dans la liste des exceptions. Le push direct vers Docker Hub
+> depuis le job de build évite ce problème.
 
 Prérequis : configurer les secrets suivants dans **Settings → Secrets →
 Actions** du repo `Scalingo/dependency-track` :
 - `DOCKER_HUB_USERNAME` : identifiant Docker Hub
 - `DOCKER_HUB_TOKEN` : access token Docker Hub (scope Read & Write)
-
-Ce workflow est propre au fork Scalingo (jamais présent côté upstream), donc
-sans risque de conflit lors des rebases.
 
 ---
 
@@ -291,8 +291,7 @@ sans risque de conflit lors des rebases.
 |---|---|
 | [.github/workflows/ci-release-scalingo.yaml](.github/workflows/ci-release-scalingo.yaml) | Workflow de release Scalingo |
 | [.github/workflows/ci-publish.yaml](.github/workflows/ci-publish.yaml) | Build et attachment des artefacts (JAR, SBOM) |
-| [.github/workflows/_meta-build.yaml](.github/workflows/_meta-build.yaml) | Build Maven + Docker réutilisable |
-| [.github/workflows/mirror-container-image-scalingo.yml](.github/workflows/mirror-container-image-scalingo.yml) | Miroir de l'image apiserver vers Docker Hub |
+| [.github/workflows/_meta-build.yaml](.github/workflows/_meta-build.yaml) | Build Maven + Docker réutilisable, push direct vers Docker Hub |
 
 ---
 
