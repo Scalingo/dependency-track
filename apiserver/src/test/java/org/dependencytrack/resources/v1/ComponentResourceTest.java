@@ -1411,6 +1411,20 @@ public class ComponentResourceTest extends ResourceTest {
     }
 
     @Test
+    public void getAllComponentsWithViewPortfolioMetadataPermissionOnlyTest() throws Exception {
+        // VIEW_PORTFOLIO_METADATA grants project existence/metadata access but not component content.
+        initializeWithPermissions(Permissions.VIEW_PORTFOLIO_METADATA);
+
+        final Project project = prepareProject();
+
+        final Response response = jersey.target(V1_COMPONENT + "/project/" + project.getUuid())
+                .request()
+                .header(X_API_KEY, apiKey)
+                .get(Response.class);
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    }
+
+    @Test
     public void getAllComponentsFilterTest() {
         initializeWithPermissions(Permissions.VIEW_PORTFOLIO);
 

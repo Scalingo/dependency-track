@@ -682,6 +682,23 @@ class ProjectResourceTest extends ResourceTest {
     }
 
     @Test
+    void getProjectLookupWithViewPortfolioMetadataPermissionTest() {
+        initializeWithPermissions(Permissions.VIEW_PORTFOLIO_METADATA);
+        final var project = new Project();
+        project.setName("acme-app");
+        project.setVersion("1.2.3");
+        qm.persist(project);
+
+        final Response response = jersey.target(V1_PROJECT + "/lookup")
+                .queryParam("name", "acme-app")
+                .queryParam("version", "1.2.3")
+                .request()
+                .header(X_API_KEY, apiKey)
+                .get();
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
     void getProjectLookupNotFoundTest() {
         initializeWithPermissions(Permissions.VIEW_PORTFOLIO);
         final var project = new Project();
@@ -2119,6 +2136,20 @@ class ProjectResourceTest extends ResourceTest {
         JsonArray json = parseJsonArray(response);
         Assertions.assertNotNull(json);
         Assertions.assertEquals("ABC", json.getJsonObject(0).getString("name"));
+    }
+
+    @Test
+    void getProjectByTagWithViewPortfolioMetadataPermissionTest() {
+        initializeWithPermissions(Permissions.VIEW_PORTFOLIO_METADATA);
+        List<Tag> tags = new ArrayList<>();
+        Tag tag = qm.createTag("production");
+        tags.add(tag);
+        qm.createProject("ABC", null, "1.0", tags, null, null, null, false);
+        Response response = jersey.target(V1_PROJECT + "/tag/" + "production")
+                .request()
+                .header(X_API_KEY, apiKey)
+                .get(Response.class);
+        Assertions.assertEquals(200, response.getStatus(), 0);
     }
 
     @Test
