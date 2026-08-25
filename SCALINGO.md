@@ -263,15 +263,25 @@ gh api --method POST \
 
 ---
 
-## 7. Publier les images Docker (optionnel)
+## 7. Publier les images Docker sur Docker Hub
 
-Par défaut `publish-container: false` dans `ci-publish.yaml` — les images sont
-buildées localement mais non pushées. Pour activer la publication :
+`ci-publish.yaml` build et pousse déjà les images `apiserver` et `v4-migrator`
+vers `ghcr.io/scalingo/*` à chaque tag de release (`publish-container: true`).
 
-1. Configurer les secrets dans **Settings → Secrets → Actions** :
-   - `HUB_USERNAME` : identifiant Docker Hub
-   - `HUB_ACCESSS_TOKEN` : token Docker Hub
-2. Dans `.github/workflows/ci-publish.yaml`, passer `publish-container: true`
+L'image `apiserver` est en plus miroitée vers Docker Hub
+(`docker.io/scalingo/dependency-track`, tags `<version>` et `latest`) par le
+workflow dédié
+[`.github/workflows/mirror-container-image-scalingo.yml`](.github/workflows/mirror-container-image-scalingo.yml),
+déclenché sur l'événement `registry_package: published` une fois l'image
+poussée sur ghcr.io.
+
+Prérequis : configurer les secrets suivants dans **Settings → Secrets →
+Actions** du repo `Scalingo/dependency-track` :
+- `DOCKER_HUB_USERNAME` : identifiant Docker Hub
+- `DOCKER_HUB_TOKEN` : access token Docker Hub (scope Read & Write)
+
+Ce workflow est propre au fork Scalingo (jamais présent côté upstream), donc
+sans risque de conflit lors des rebases.
 
 ---
 
@@ -282,6 +292,7 @@ buildées localement mais non pushées. Pour activer la publication :
 | [.github/workflows/ci-release-scalingo.yaml](.github/workflows/ci-release-scalingo.yaml) | Workflow de release Scalingo |
 | [.github/workflows/ci-publish.yaml](.github/workflows/ci-publish.yaml) | Build et attachment des artefacts (JAR, SBOM) |
 | [.github/workflows/_meta-build.yaml](.github/workflows/_meta-build.yaml) | Build Maven + Docker réutilisable |
+| [.github/workflows/mirror-container-image-scalingo.yml](.github/workflows/mirror-container-image-scalingo.yml) | Miroir de l'image apiserver vers Docker Hub |
 
 ---
 
